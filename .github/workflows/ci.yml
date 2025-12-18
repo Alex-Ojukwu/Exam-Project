@@ -3,7 +3,7 @@ name: CI Pipeline
 # Trigger the workflow on push and pull requests to main branch
 on:
   push:
-    branches: [ main, dev ]
+    branches: [ main, develop ]
   pull_request:
     branches: [ main ]
 
@@ -21,7 +21,6 @@ jobs:
       uses: actions/setup-node@v3
       with:
         node-version: '18'
-        cache: 'npm'
     
     # Install dependencies
     - name: Install dependencies
