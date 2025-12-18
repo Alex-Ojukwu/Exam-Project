@@ -40,7 +40,7 @@ jobs:
     
     # Upload frontend build artifacts
     - name: Upload frontend build artifacts
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       if: success()
       with:
         name: frontend-build
@@ -80,7 +80,7 @@ jobs:
     
     # Upload backend build artifacts (if applicable)
     - name: Upload backend build artifacts
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       if: success()
       with:
         name: backend-build
