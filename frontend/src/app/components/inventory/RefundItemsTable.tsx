@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import { Search, Minus, Plus } from 'lucide-react';
 
 export interface RefundItem {
@@ -25,6 +26,8 @@ export default function RefundItemsTable({
   onUpdateQty,
   onUpdateCondition,
 }: RefundItemsTableProps) {
+  const [searchQuery, setSearchQuery] = useState('');
+
   const handleDecrement = (id: string, currentQty: number) => {
     if (currentQty > 0) {
       onUpdateQty?.(id, currentQty - 1);
@@ -37,6 +40,14 @@ export default function RefundItemsTable({
     }
   };
 
+  // Filter items based on search query
+  const filteredItems = items.filter((item) => {
+    const query = searchQuery.toLowerCase();
+    return item.item.toLowerCase().includes(query);
+  });
+
+  const displayItems = searchQuery ? filteredItems : items;
+
   return (
     <div className="bg-[#6b8fa3] rounded-lg p-4">
       <div className="flex items-center justify-between mb-4">
@@ -45,7 +56,9 @@ export default function RefundItemsTable({
           <input
             type="text"
             placeholder="Search..."
-            className="pl-10 pr-4 py-2 rounded-md border-none bg-white text-sm w-64"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-10 pr-4 py-2 rounded-md border-none bg-white text-sm text-gray-900 placeholder-gray-400 w-64"
           />
           <Search className="absolute left-3 top-2.5 text-gray-400" size={18} />
         </div>
@@ -64,7 +77,7 @@ export default function RefundItemsTable({
             </tr>
           </thead>
           <tbody>
-            {items.map((item) => (
+            {displayItems.map((item) => (
               <tr
                 key={item.id}
                 className="border-b border-gray-200 hover:bg-gray-50"
@@ -77,9 +90,9 @@ export default function RefundItemsTable({
                     className="w-4 h-4"
                   />
                 </td>
-                <td className="px-4 py-3 text-sm font-medium">{item.item}</td>
-                <td className="px-4 py-3 text-sm">{item.productPrice.toFixed(2)}</td>
-                <td className="px-4 py-3 text-sm text-center">{item.qtyPurchased}</td>
+                <td className="px-4 py-3 text-sm font-medium text-gray-900">{item.item}</td>
+                <td className="px-4 py-3 text-sm text-gray-900">{item.productPrice.toFixed(2)}</td>
+                <td className="px-4 py-3 text-sm text-center text-gray-900">{item.qtyPurchased}</td>
                 <td className="px-4 py-3">
                   <div className="flex items-center gap-2">
                     <button
@@ -88,7 +101,7 @@ export default function RefundItemsTable({
                     >
                       <Minus size={14} />
                     </button>
-                    <span className="w-8 text-center text-sm font-medium">
+                    <span className="w-8 text-center text-sm font-medium text-gray-900">
                       {item.qtyToReturn}
                     </span>
                     <button
@@ -111,7 +124,7 @@ export default function RefundItemsTable({
                       )
                     }
                     className={`
-                      px-3 py-1.5 rounded text-sm border-none
+                      px-3 py-1.5 rounded text-sm border-none font-medium
                       ${
                         item.condition === 'Resellable'
                           ? 'bg-blue-200 text-blue-800'
@@ -126,7 +139,7 @@ export default function RefundItemsTable({
               </tr>
             ))}
             {/* Empty rows */}
-            {Array.from({ length: Math.max(0, 3 - items.length) }).map((_, i) => (
+            {Array.from({ length: Math.max(0, 3 - displayItems.length) }).map((_, i) => (
               <tr key={`empty-${i}`} className="border-b border-gray-200">
                 <td className="px-4 py-3 h-12"></td>
                 <td className="px-4 py-3"></td>
@@ -139,6 +152,9 @@ export default function RefundItemsTable({
           </tbody>
         </table>
       </div>
+      {searchQuery && displayItems.length === 0 && (
+        <p className="text-center text-white py-4 text-sm">No items found</p>
+      )}
 
       <div className="mt-4 flex items-center gap-2 text-sm text-white">
         <span className="bg-[#4a6575] px-3 py-1 rounded">ℹ️</span>
