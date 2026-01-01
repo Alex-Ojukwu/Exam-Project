@@ -116,7 +116,7 @@ export default function CreateProductSupplierPage() {
   };
 
   return (
-    <div className="flex min-h-screen bg-[#2d4a5c]">
+    <div className="flex min-h-screen bg-gray-100">
       <InventorySidebar />
 
       <div className="flex-1 flex flex-col">
