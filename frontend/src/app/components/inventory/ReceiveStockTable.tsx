@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import { Search } from 'lucide-react';
 
 export interface ReceiveStockItem {
@@ -19,6 +20,8 @@ export default function ReceiveStockTable({
   items,
   onUpdateDelivered,
 }: ReceiveStockTableProps) {
+  const [searchQuery, setSearchQuery] = useState('');
+
   const calculateDifference = (purchased: number, delivered: number) => {
     return purchased - delivered;
   };
@@ -26,6 +29,17 @@ export default function ReceiveStockTable({
   const calculateTotalPrice = (unitPrice: number, qtyDelivered: number) => {
     return (unitPrice * qtyDelivered).toFixed(2);
   };
+
+  // Filter items based on search query
+  const filteredItems = items.filter((item) => {
+    const query = searchQuery.toLowerCase();
+    return (
+      item.barcode.toLowerCase().includes(query) ||
+      item.productName.toLowerCase().includes(query)
+    );
+  });
+
+  const displayItems = searchQuery ? filteredItems : items;
 
   return (
     <div className="bg-[#a8c5d8] rounded-lg p-4">
@@ -35,7 +49,9 @@ export default function ReceiveStockTable({
           <input
             type="text"
             placeholder="Search..."
-            className="pl-10 pr-4 py-2 rounded-md border-none bg-white text-sm w-64"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-10 pr-4 py-2 rounded-md border-none bg-white text-sm text-gray-900 placeholder-gray-400 w-64"
           />
           <Search className="absolute left-3 top-2.5 text-gray-400" size={18} />
         </div>
@@ -55,26 +71,27 @@ export default function ReceiveStockTable({
             </tr>
           </thead>
           <tbody>
-            {items.map((item, index) => {
+            {displayItems.map((item, index) => {
               const difference = calculateDifference(item.qtyPurchased, item.qtyDelivered);
               const totalPrice = calculateTotalPrice(item.unitPrice, item.qtyDelivered);
+              const originalIndex = items.indexOf(item);
 
               return (
                 <tr
                   key={index}
                   className="border-b border-gray-200 hover:bg-gray-50"
                 >
-                  <td className="px-4 py-3 text-sm">{item.barcode}</td>
-                  <td className="px-4 py-3 text-sm">{item.productName}</td>
-                  <td className="px-4 py-3 text-sm text-center">{item.qtyPurchased}</td>
+                  <td className="px-4 py-3 text-sm text-gray-900">{item.barcode}</td>
+                  <td className="px-4 py-3 text-sm text-gray-900">{item.productName}</td>
+                  <td className="px-4 py-3 text-sm text-center text-gray-900">{item.qtyPurchased}</td>
                   <td className="px-4 py-3 text-sm text-center">
                     <input
                       type="number"
                       value={item.qtyDelivered}
                       onChange={(e) =>
-                        onUpdateDelivered?.(index, parseInt(e.target.value) || 0)
+                        onUpdateDelivered?.(originalIndex, parseInt(e.target.value) || 0)
                       }
-                      className="w-16 text-center bg-transparent border-b border-gray-300 focus:border-blue-500 focus:outline-none"
+                      className="w-16 text-center text-gray-900 bg-transparent border-b border-gray-300 focus:border-blue-500 focus:outline-none"
                     />
                   </td>
                   <td className="px-4 py-3 text-sm text-center">
@@ -88,13 +105,13 @@ export default function ReceiveStockTable({
                       {difference}
                     </span>
                   </td>
-                  <td className="px-4 py-3 text-sm">{item.unitPrice.toFixed(2)}</td>
-                  <td className="px-4 py-3 text-sm">{totalPrice}</td>
+                  <td className="px-4 py-3 text-sm text-gray-900">{item.unitPrice.toFixed(2)}</td>
+                  <td className="px-4 py-3 text-sm text-gray-900">{totalPrice}</td>
                 </tr>
               );
             })}
             {/* Empty rows */}
-            {Array.from({ length: Math.max(0, 5 - items.length) }).map((_, i) => (
+            {Array.from({ length: Math.max(0, 5 - displayItems.length) }).map((_, i) => (
               <tr key={`empty-${i}`} className="border-b border-gray-200">
                 <td className="px-4 py-3 h-12"></td>
                 <td className="px-4 py-3"></td>
@@ -108,6 +125,9 @@ export default function ReceiveStockTable({
           </tbody>
         </table>
       </div>
+      {searchQuery && displayItems.length === 0 && (
+        <p className="text-center text-gray-500 py-4 text-sm">No items found</p>
+      )}
     </div>
   );
 }

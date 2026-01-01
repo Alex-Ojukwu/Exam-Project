@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { ArrowLeft, Calendar, ChevronDown } from 'lucide-react';
+import { ArrowLeft, Search } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { InventorySidebar, InventoryHeader } from '@/app/components/inventory';
 
@@ -21,8 +21,7 @@ interface PurchaseOrder {
 export default function InventoryListPage() {
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedPO, setSelectedPO] = useState('');
-  const [dateFilter, setDateFilter] = useState('');
+  const [dateSearch, setDateSearch] = useState('');
 
   // Mock inventory history data
   const [inventoryItems, setInventoryItems] = useState<InventoryItem[]>([
@@ -73,7 +72,7 @@ export default function InventoryListPage() {
   };
 
   return (
-    <div className="flex min-h-screen bg-[#2d4a5c]">
+    <div className="flex min-h-screen bg-gray-100">
       <InventorySidebar />
 
       <div className="flex-1 flex flex-col">
@@ -87,28 +86,20 @@ export default function InventoryListPage() {
             {/* Main Content - Inventory History */}
             <div className="flex-1">
               <div className="bg-[#a8c5d8] rounded-lg p-4">
-                {/* Header with Date Filter */}
+                {/* Header */}
                 <div className="flex items-center justify-between mb-4">
                   <h2 className="text-[#2d4a5c] font-semibold text-lg">
                     Inventory History
                   </h2>
-                  <div className="flex items-center gap-2">
+                  <div className="relative">
                     <input
                       type="text"
-                      placeholder="Enter Order Date"
-                      value={dateFilter}
-                      onChange={(e) => setDateFilter(e.target.value)}
-                      className="px-4 py-2 rounded-md border-none bg-white text-sm w-48"
+                      placeholder="DD/MM/YYYY"
+                      value={dateSearch}
+                      onChange={(e) => setDateSearch(e.target.value)}
+                      className="pl-10 pr-4 py-2 rounded-md border-none bg-white text-sm text-gray-900 placeholder-gray-400 w-64"
                     />
-                    <button className="p-2 bg-white rounded-md hover:bg-gray-50">
-                      <Calendar size={20} className="text-gray-600" />
-                    </button>
-                    <button className="p-2 bg-white rounded-md hover:bg-gray-50">
-                      <Calendar size={20} className="text-gray-600" />
-                    </button>
-                    <button className="p-2 bg-white rounded-md hover:bg-gray-50">
-                      <Calendar size={20} className="text-gray-600" />
-                    </button>
+                    <Search className="absolute left-3 top-2.5 text-gray-400" size={18} />
                   </div>
                 </div>
 
@@ -137,14 +128,14 @@ export default function InventoryListPage() {
                           key={index}
                           className="border-b border-gray-200 hover:bg-gray-50"
                         >
-                          <td className="px-4 py-3 text-sm">{item.barcode}</td>
-                          <td className="px-4 py-3 text-sm">{item.productName}</td>
+                          <td className="px-4 py-3 text-sm text-gray-900">{item.barcode}</td>
+                          <td className="px-4 py-3 text-sm text-gray-900">{item.productName}</td>
                           <td className="px-4 py-3 text-sm">
                             <span className="bg-[#6b8fa3] text-white px-3 py-1 rounded">
                               {item.qtyNeeded}
                             </span>
                           </td>
-                          <td className="px-4 py-3 text-sm">{item.unitPrice.toFixed(2)}</td>
+                          <td className="px-4 py-3 text-sm text-gray-900">{item.unitPrice.toFixed(2)}</td>
                         </tr>
                       ))}
                       {/* Empty rows */}
