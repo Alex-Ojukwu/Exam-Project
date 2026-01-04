@@ -2,7 +2,11 @@
 
 import React from 'react'
 
-export default function PaymentActions() {
+interface PaymentActionsProps {
+  onConfirmClick: () => void;
+}
+
+export default function PaymentActions({ onConfirmClick }: PaymentActionsProps) {
   return (
     <div className="bg-[#D1D5DB] p-6 flex items-center justify-between rounded-b-lg">
       {/* Back Button */}
@@ -30,7 +34,10 @@ export default function PaymentActions() {
         </button>
 
         {/* Confirm Button */}
-        <button className="px-6 py-3 bg-[#60A5FA] hover:bg-[#4F94E8] text-white font-semibold rounded-lg transition-colors shadow-md">
+        <button
+          onClick={onConfirmClick}
+          className="px-6 py-3 bg-[#60A5FA] hover:bg-[#4F94E8] text-white font-semibold rounded-lg transition-colors shadow-md"
+        >
           Confirm
         </button>
       </div>

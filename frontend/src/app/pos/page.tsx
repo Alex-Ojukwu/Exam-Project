@@ -5,6 +5,7 @@ import ProductSearch from '../components/pos/ProductSearch';
 import CartTable from '../components/pos/CartTable';
 import OrderSummary from '../components/pos/OrderSummary';
 import PaymentActions from '../components/pos/PaymentActions';
+import PaymentModal from '../components/pos/PaymentModal';
 
 interface CartItem {
   barcode: string;
@@ -18,6 +19,7 @@ export default function PosPage() {
     { barcode: '234934474747', name: 'PRODUCT 1', quantity: 1, price: 2000.00 },
     { barcode: '834959948420', name: 'PRODUCT 2', quantity: 2, price: 2000.00 },
   ]);
+  const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
 
   const updateQuantity = (index: number, delta: number) => {
     setCartItems(items => {
@@ -28,6 +30,12 @@ export default function PosPage() {
       }
       return newItems;
     });
+  };
+
+  const totalAmount = cartItems.reduce((total, item) => total + (item.quantity * item.price), 0);
+
+  const handleConfirmClick = () => {
+    setIsPaymentModalOpen(true);
   };
 
   return (
@@ -43,8 +51,15 @@ export default function PosPage() {
       {/* Order Summary and Payment Actions - Fixed at bottom */}
       <div className="mt-auto">
         <OrderSummary cartItems={cartItems} />
-        <PaymentActions />
+        <PaymentActions onConfirmClick={handleConfirmClick} />
       </div>
+
+      {/* Payment Modal */}
+      <PaymentModal
+        isOpen={isPaymentModalOpen}
+        onClose={() => setIsPaymentModalOpen(false)}
+        totalAmount={totalAmount}
+      />
     </main>
   );
 }
