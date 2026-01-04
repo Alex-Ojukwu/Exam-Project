@@ -15,6 +15,8 @@ export default function PaymentModal({ isOpen, onClose, totalAmount }: PaymentMo
   const [transferAmount, setTransferAmount] = useState('0.00');
   const [isProcessing, setIsProcessing] = useState(false);
   const [isApproved, setIsApproved] = useState(false);
+  const [isFailed, setIsFailed] = useState(false);
+  const [showSold, setShowSold] = useState(false);
 
   if (!isOpen) return null;
 
@@ -23,29 +25,45 @@ export default function PaymentModal({ isOpen, onClose, totalAmount }: PaymentMo
 
   const handleConfirm = async () => {
     setIsProcessing(true);
+    setIsFailed(false);
 
     // Simulate payment processing
     await new Promise(resolve => setTimeout(resolve, 2000));
 
-    // TODO: Handle actual payment confirmation logic
-    console.log('Payment confirmed:', { cashAmount, cardAmount, transferAmount, totalPaid, change });
+    // TODO: Replace with actual payment API call
+    // Simulate random success/failure (70% success rate for demo)
+    const isSuccess = Math.random() > 0.3;
 
-    setIsProcessing(false);
-    setIsApproved(true);
-    // Don't close modal - wait for user to click Save or Print
+    if (isSuccess) {
+      console.log('Payment confirmed:', { cashAmount, cardAmount, transferAmount, totalPaid, change });
+      setIsProcessing(false);
+      setIsApproved(true);
+      // Don't close modal - wait for user to click Save or Print
+    } else {
+      console.log('Payment failed');
+      setIsProcessing(false);
+      setIsFailed(true);
+      // Allow user to retry
+    }
   };
 
-  const handlePrint = () => {
+  const handlePrint = async () => {
     // TODO: Handle print receipt logic
     console.log('Printing receipt...');
-    // Reset states and close modal
+    // Show SOLD message
+    setShowSold(true);
+    // Wait for 1.5 seconds then close
+    await new Promise(resolve => setTimeout(resolve, 1500));
     resetAndClose();
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     // TODO: Handle save transaction logic
     console.log('Saving transaction...');
-    // Reset states and close modal
+    // Show SOLD message
+    setShowSold(true);
+    // Wait for 1.5 seconds then close
+    await new Promise(resolve => setTimeout(resolve, 1500));
     resetAndClose();
   };
 
@@ -55,8 +73,23 @@ export default function PaymentModal({ isOpen, onClose, totalAmount }: PaymentMo
     setTransferAmount('0.00');
     setIsProcessing(false);
     setIsApproved(false);
+    setIsFailed(false);
+    setShowSold(false);
     onClose();
   };
+
+  // Show SOLD message if sale is complete
+  if (showSold) {
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50">
+        <div className="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-sm">
+          <div className="bg-blue-300 text-gray-700 font-bold text-2xl py-6 text-center rounded-lg">
+            SOLD !
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50">
@@ -132,7 +165,11 @@ export default function PaymentModal({ isOpen, onClose, totalAmount }: PaymentMo
         <button
           onClick={handleConfirm}
           disabled={isProcessing || isApproved}
-          className="w-full bg-green-400 hover:bg-green-500 disabled:bg-green-400 disabled:cursor-not-allowed text-white font-bold py-4 rounded-lg mb-4 transition-colors shadow-md flex items-center justify-center gap-2"
+          className={`w-full font-bold py-4 rounded-lg mb-4 transition-colors shadow-md flex items-center justify-center gap-2 ${
+            isFailed
+              ? 'bg-red-500 hover:bg-red-600 text-white'
+              : 'bg-green-400 hover:bg-green-500 disabled:bg-green-400 disabled:cursor-not-allowed text-white'
+          }`}
         >
           {isProcessing ? (
             <span className="text-2xl">• • •</span>
@@ -140,6 +177,8 @@ export default function PaymentModal({ isOpen, onClose, totalAmount }: PaymentMo
             <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
             </svg>
+          ) : isFailed ? (
+            <span>Payment Failed</span>
           ) : (
             <span>Payment Confirmed</span>
           )}
