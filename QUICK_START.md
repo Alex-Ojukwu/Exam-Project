@@ -28,7 +28,7 @@ cd pos-inventory-system
 
 cd backend  
 python -m venv venv  
-# ManOS source venv/bin/activate   # Windows: venv\Scripts\activate
+# MacOS source venv/bin/activate   # Windows: venv\Scripts\activate
 
 ### 2. Install dependencies
 
