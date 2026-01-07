@@ -9,11 +9,13 @@ import {
   NotificationsPanel,
   type Notification,
 } from '@/app/components/inventory';
+import { useSupplierStore } from '@/app/store/supplierStore';
 
 type FormMode = 'Create New Product' | 'Create New Supplier';
 
 export default function CreateProductSupplierPage() {
   const router = useRouter();
+  const addSupplier = useSupplierStore((state) => state.addSupplier);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedOption, setSelectedOption] = useState<FormMode>('Create New Product');
   const [showDropdown, setShowDropdown] = useState(false);
@@ -97,6 +99,16 @@ export default function CreateProductSupplierPage() {
       alert('Please fill in all fields');
       return;
     }
+
+    // Create supplier object
+    const newSupplier = {
+      id: supplierId,
+      name: supplierName,
+      contact: supplierContact,
+    };
+
+    // Add to Zustand store
+    addSupplier(newSupplier);
 
     // TODO: API call to create supplier
     const supplierData = {

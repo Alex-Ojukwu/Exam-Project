@@ -12,9 +12,11 @@ import {
   type PurchaseOrderItem,
   type Supplier,
 } from '@/app/components/inventory';
+import { useSupplierStore } from '@/app/store/supplierStore';
 
 export default function CreatePurchaseOrderPage() {
   const router = useRouter();
+  const suppliers = useSupplierStore((state) => state.suppliers);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedSupplierId, setSelectedSupplierId] = useState<string>('');
   const [showSuccessMessage, setShowSuccessMessage] = useState(false);
@@ -26,15 +28,7 @@ export default function CreatePurchaseOrderPage() {
   const lowStockItems = [
     { barcode: '83464569', productName: 'PRODUCT 8' },
     { barcode: '44675676', productName: 'PRODUCT 7' },
-    { barcode: '83464569', productName: 'PRODUCT 9' },
-  ];
-
-  // Mock suppliers (replace with API call later)
-  const suppliers: Supplier[] = [
-    { id: '62348732', name: 'Supplier 63', contact: '+234 09 9458 2548' },
-    { id: '12345678', name: 'ABC Suppliers Ltd', contact: '+234 08 1234 5678' },
-    { id: '87654321', name: 'XYZ Distributors', contact: '+234 07 8765 4321' },
-    { id: '11223344', name: 'Global Trade Co', contact: '+234 09 1122 3344' },
+    { barcode: '93847562', productName: 'PRODUCT 9' },
   ];
 
   const calculateTotalAmount = () => {
@@ -57,10 +51,31 @@ export default function CreatePurchaseOrderPage() {
   };
 
   const handleSelectLowStockItem = (item: { barcode: string; productName: string }) => {
-    // Add low stock item to the purchase order table
-    const existingIndex = poItems.findIndex((poItem) => poItem.barcode === item.barcode);
+    // Check if item already exists in the table
+    const existingIndex = poItems.findIndex(
+      (poItem) => poItem.barcode === item.barcode && poItem.barcode !== ''
+    );
 
-    if (existingIndex === -1) {
+    // If item already exists, don't add it again
+    if (existingIndex !== -1) {
+      return;
+    }
+
+    // Check if there's only one empty row
+    const hasOnlyEmptyRow =
+      poItems.length === 1 &&
+      poItems[0].barcode === '' &&
+      poItems[0].productName === '' &&
+      poItems[0].qtyNeeded === 0 &&
+      poItems[0].unitPrice === 0;
+
+    if (hasOnlyEmptyRow) {
+      // Replace the empty row with the selected item
+      setPoItems([
+        { barcode: item.barcode, productName: item.productName, qtyNeeded: 0, unitPrice: 0 },
+      ]);
+    } else {
+      // Add as a new row
       setPoItems([
         ...poItems,
         { barcode: item.barcode, productName: item.productName, qtyNeeded: 0, unitPrice: 0 },
