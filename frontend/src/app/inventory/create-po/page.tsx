@@ -8,12 +8,16 @@ import {
   InventoryHeader,
   PurchaseOrderTable,
   LowStockAlert,
+  SupplierSelector,
   type PurchaseOrderItem,
+  type Supplier,
 } from '@/app/components/inventory';
 
 export default function CreatePurchaseOrderPage() {
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedSupplierId, setSelectedSupplierId] = useState<string>('');
+  const [showSuccessMessage, setShowSuccessMessage] = useState(false);
   const [poItems, setPoItems] = useState<PurchaseOrderItem[]>([
     { barcode: '', productName: '', qtyNeeded: 0, unitPrice: 0 },
   ]);
@@ -23,6 +27,14 @@ export default function CreatePurchaseOrderPage() {
     { barcode: '83464569', productName: 'PRODUCT 8' },
     { barcode: '44675676', productName: 'PRODUCT 7' },
     { barcode: '83464569', productName: 'PRODUCT 9' },
+  ];
+
+  // Mock suppliers (replace with API call later)
+  const suppliers: Supplier[] = [
+    { id: '62348732', name: 'Supplier 63', contact: '+234 09 9458 2548' },
+    { id: '12345678', name: 'ABC Suppliers Ltd', contact: '+234 08 1234 5678' },
+    { id: '87654321', name: 'XYZ Distributors', contact: '+234 07 8765 4321' },
+    { id: '11223344', name: 'Global Trade Co', contact: '+234 09 1122 3344' },
   ];
 
   const calculateTotalAmount = () => {
@@ -67,8 +79,23 @@ export default function CreatePurchaseOrderPage() {
       return;
     }
 
+    if (!selectedSupplierId) {
+      alert('Please select a supplier');
+      return;
+    }
+
     console.log('Creating PO with items:', validItems);
+    console.log('Supplier ID:', selectedSupplierId);
     console.log('Total Amount:', calculateTotalAmount());
+
+    // Show success message
+    setShowSuccessMessage(true);
+
+    // Auto-hide message after 3 seconds
+    setTimeout(() => {
+      setShowSuccessMessage(false);
+    }, 3000);
+
     // router.push('/inventory');
   };
 
@@ -101,18 +128,60 @@ export default function CreatePurchaseOrderPage() {
                   </div>
                 </div>
 
-                <button
-                  onClick={handleCreateOrder}
-                  className="bg-[#b8d4e8] hover:bg-[#a3c4db] text-[#2d4a5c] px-8 py-3 rounded-lg font-semibold transition-colors flex items-center gap-2"
-                >
-                  Create Order
-                  <ArrowLeft className="rotate-180" size={20} />
-                </button>
+                <div className="flex items-center gap-4">
+                  {/* Success Message */}
+                  {showSuccessMessage && (
+                    <div className="bg-[#86efac] text-gray-700 px-6 py-3 rounded-lg shadow-lg flex items-center gap-3">
+                      <span className="font-medium">Order created and forwarded</span>
+                      <button
+                        onClick={() => setShowSuccessMessage(false)}
+                        className="text-gray-700 hover:text-gray-900"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </button>
+                    </div>
+                  )}
+
+                  {/* Create Order Button - Changes to green with checkmark when order is created */}
+                  <button
+                    onClick={handleCreateOrder}
+                    className={`px-8 py-3 rounded-lg font-semibold transition-colors flex items-center gap-2 ${
+                      showSuccessMessage
+                        ? 'bg-[#4ade80] hover:bg-[#3bc670] text-white'
+                        : 'bg-[#b8d4e8] hover:bg-[#a3c4db] text-[#2d4a5c]'
+                    }`}
+                  >
+                    {showSuccessMessage ? (
+                      <>
+                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                        </svg>
+                      </>
+                    ) : (
+                      <>
+                        Create Order
+                        <ArrowLeft className="rotate-180" size={20} />
+                      </>
+                    )}
+                  </button>
+                </div>
               </div>
             </div>
 
-            {/* Low Stock Alerts Sidebar */}
-            <LowStockAlert items={lowStockItems} onSelectItem={handleSelectLowStockItem} />
+            {/* Right Sidebar */}
+            <div className="space-y-4">
+              {/* Low Stock Alerts */}
+              <LowStockAlert items={lowStockItems} onSelectItem={handleSelectLowStockItem} />
+
+              {/* Supplier Selector */}
+              <SupplierSelector
+                suppliers={suppliers}
+                selectedSupplierId={selectedSupplierId}
+                onSelectSupplier={setSelectedSupplierId}
+              />
+            </div>
           </div>
 
           {/* Back Button */}

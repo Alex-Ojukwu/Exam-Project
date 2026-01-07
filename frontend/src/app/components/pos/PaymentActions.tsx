@@ -4,9 +4,10 @@ import React from 'react'
 
 interface PaymentActionsProps {
   onConfirmClick: () => void;
+  onCancelClick: () => void;
 }
 
-export default function PaymentActions({ onConfirmClick }: PaymentActionsProps) {
+export default function PaymentActions({ onConfirmClick, onCancelClick }: PaymentActionsProps) {
   return (
     <div className="bg-[#D1D5DB] p-6 flex items-center justify-between rounded-b-lg">
       {/* Back Button */}
@@ -27,7 +28,10 @@ export default function PaymentActions({ onConfirmClick }: PaymentActionsProps) 
         </button>
 
         {/* Cancel Button */}
-        <button className="px-6 py-3 bg-[#F87171] hover:bg-[#E85D5D] text-white font-semibold rounded-lg flex items-center justify-center transition-colors shadow-md">
+        <button
+          onClick={onCancelClick}
+          className="px-6 py-3 bg-[#F87171] hover:bg-[#E85D5D] text-white font-semibold rounded-lg flex items-center justify-center transition-colors shadow-md"
+        >
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
           </svg>

@@ -12,12 +12,13 @@ interface CartItem {
 interface CartTableProps {
   cartItems: CartItem[];
   updateQuantity: (index: number, delta: number) => void;
+  showCancelMessage?: boolean;
 }
 
-export default function CartTable({ cartItems, updateQuantity }: CartTableProps) {
+export default function CartTable({ cartItems, updateQuantity, showCancelMessage }: CartTableProps) {
 
   return (
-    <div className="bg-[#34516A] overflow-hidden shadow-lg">
+    <div className="bg-[#34516A] overflow-hidden shadow-lg relative">
       <table className="w-full border-collapse">
         <thead>
           <tr className="bg-[#7A9AAE] text-gray-700">
@@ -72,6 +73,15 @@ export default function CartTable({ cartItems, updateQuantity }: CartTableProps)
           ))}
         </tbody>
       </table>
+
+      {/* Sale Cancelled Message Overlay */}
+      {showCancelMessage && (
+        <div className="absolute inset-0 flex items-center justify-center bg-black/10">
+          <div className="bg-[#9CA3AF] text-gray-700 px-8 py-4 rounded-lg shadow-lg font-semibold text-lg">
+            Sale cancelled
+          </div>
+        </div>
+      )}
     </div>
   )
 }
