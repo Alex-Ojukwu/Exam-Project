@@ -20,6 +20,7 @@ export default function PosPage() {
     { barcode: '834959948420', name: 'PRODUCT 2', quantity: 2, price: 2000.00 },
   ]);
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
+  const [showCancelMessage, setShowCancelMessage] = useState(false);
 
   const updateQuantity = (index: number, delta: number) => {
     setCartItems(items => {
@@ -38,6 +39,17 @@ export default function PosPage() {
     setIsPaymentModalOpen(true);
   };
 
+  const handleCancelClick = () => {
+    // Clear the cart
+    setCartItems([]);
+    // Show cancel message
+    setShowCancelMessage(true);
+    // Hide message after 2 seconds
+    setTimeout(() => {
+      setShowCancelMessage(false);
+    }, 2000);
+  };
+
   return (
     <main className="h-screen bg-gradient-to-br from-gray-900 to-gray-800 flex flex-col">
       {/* Header Section with Search */}
@@ -45,13 +57,20 @@ export default function PosPage() {
 
       {/* Cart Table - Takes up remaining space */}
       <div className="flex-1 overflow-auto">
-        <CartTable cartItems={cartItems} updateQuantity={updateQuantity} />
+        <CartTable
+          cartItems={cartItems}
+          updateQuantity={updateQuantity}
+          showCancelMessage={showCancelMessage}
+        />
       </div>
 
       {/* Order Summary and Payment Actions - Fixed at bottom */}
       <div className="mt-auto">
         <OrderSummary cartItems={cartItems} />
-        <PaymentActions onConfirmClick={handleConfirmClick} />
+        <PaymentActions
+          onConfirmClick={handleConfirmClick}
+          onCancelClick={handleCancelClick}
+        />
       </div>
 
       {/* Payment Modal */}

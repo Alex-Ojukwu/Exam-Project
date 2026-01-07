@@ -40,8 +40,8 @@ export default function LowStockAlert({ items, onSelectItem }: LowStockAlertProp
               </div>
               <input
                 type="checkbox"
-                className="w-4 h-4"
-                onClick={(e) => e.stopPropagation()}
+                className="w-4 h-4 cursor-pointer"
+                onChange={() => onSelectItem?.(item)}
               />
             </div>
           ))

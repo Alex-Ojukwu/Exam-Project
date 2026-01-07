@@ -8,12 +8,18 @@ import {
   InventoryHeader,
   PurchaseOrderTable,
   LowStockAlert,
+  SupplierSelector,
   type PurchaseOrderItem,
+  type Supplier,
 } from '@/app/components/inventory';
+import { useSupplierStore } from '@/app/store/supplierStore';
 
 export default function CreatePurchaseOrderPage() {
   const router = useRouter();
+  const suppliers = useSupplierStore((state) => state.suppliers);
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedSupplierId, setSelectedSupplierId] = useState<string>('');
+  const [showSuccessMessage, setShowSuccessMessage] = useState(false);
   const [poItems, setPoItems] = useState<PurchaseOrderItem[]>([
     { barcode: '', productName: '', qtyNeeded: 0, unitPrice: 0 },
   ]);
@@ -22,7 +28,7 @@ export default function CreatePurchaseOrderPage() {
   const lowStockItems = [
     { barcode: '83464569', productName: 'PRODUCT 8' },
     { barcode: '44675676', productName: 'PRODUCT 7' },
-    { barcode: '83464569', productName: 'PRODUCT 9' },
+    { barcode: '93847562', productName: 'PRODUCT 9' },
   ];
 
   const calculateTotalAmount = () => {
@@ -45,10 +51,31 @@ export default function CreatePurchaseOrderPage() {
   };
 
   const handleSelectLowStockItem = (item: { barcode: string; productName: string }) => {
-    // Add low stock item to the purchase order table
-    const existingIndex = poItems.findIndex((poItem) => poItem.barcode === item.barcode);
+    // Check if item already exists in the table
+    const existingIndex = poItems.findIndex(
+      (poItem) => poItem.barcode === item.barcode && poItem.barcode !== ''
+    );
 
-    if (existingIndex === -1) {
+    // If item already exists, don't add it again
+    if (existingIndex !== -1) {
+      return;
+    }
+
+    // Check if there's only one empty row
+    const hasOnlyEmptyRow =
+      poItems.length === 1 &&
+      poItems[0].barcode === '' &&
+      poItems[0].productName === '' &&
+      poItems[0].qtyNeeded === 0 &&
+      poItems[0].unitPrice === 0;
+
+    if (hasOnlyEmptyRow) {
+      // Replace the empty row with the selected item
+      setPoItems([
+        { barcode: item.barcode, productName: item.productName, qtyNeeded: 0, unitPrice: 0 },
+      ]);
+    } else {
+      // Add as a new row
       setPoItems([
         ...poItems,
         { barcode: item.barcode, productName: item.productName, qtyNeeded: 0, unitPrice: 0 },
@@ -67,8 +94,23 @@ export default function CreatePurchaseOrderPage() {
       return;
     }
 
+    if (!selectedSupplierId) {
+      alert('Please select a supplier');
+      return;
+    }
+
     console.log('Creating PO with items:', validItems);
+    console.log('Supplier ID:', selectedSupplierId);
     console.log('Total Amount:', calculateTotalAmount());
+
+    // Show success message
+    setShowSuccessMessage(true);
+
+    // Auto-hide message after 3 seconds
+    setTimeout(() => {
+      setShowSuccessMessage(false);
+    }, 3000);
+
     // router.push('/inventory');
   };
 
@@ -101,18 +143,60 @@ export default function CreatePurchaseOrderPage() {
                   </div>
                 </div>
 
-                <button
-                  onClick={handleCreateOrder}
-                  className="bg-[#b8d4e8] hover:bg-[#a3c4db] text-[#2d4a5c] px-8 py-3 rounded-lg font-semibold transition-colors flex items-center gap-2"
-                >
-                  Create Order
-                  <ArrowLeft className="rotate-180" size={20} />
-                </button>
+                <div className="flex items-center gap-4">
+                  {/* Success Message */}
+                  {showSuccessMessage && (
+                    <div className="bg-[#86efac] text-gray-700 px-6 py-3 rounded-lg shadow-lg flex items-center gap-3">
+                      <span className="font-medium">Order created and forwarded</span>
+                      <button
+                        onClick={() => setShowSuccessMessage(false)}
+                        className="text-gray-700 hover:text-gray-900"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </button>
+                    </div>
+                  )}
+
+                  {/* Create Order Button - Changes to green with checkmark when order is created */}
+                  <button
+                    onClick={handleCreateOrder}
+                    className={`px-8 py-3 rounded-lg font-semibold transition-colors flex items-center gap-2 ${
+                      showSuccessMessage
+                        ? 'bg-[#4ade80] hover:bg-[#3bc670] text-white'
+                        : 'bg-[#b8d4e8] hover:bg-[#a3c4db] text-[#2d4a5c]'
+                    }`}
+                  >
+                    {showSuccessMessage ? (
+                      <>
+                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                        </svg>
+                      </>
+                    ) : (
+                      <>
+                        Create Order
+                        <ArrowLeft className="rotate-180" size={20} />
+                      </>
+                    )}
+                  </button>
+                </div>
               </div>
             </div>
 
-            {/* Low Stock Alerts Sidebar */}
-            <LowStockAlert items={lowStockItems} onSelectItem={handleSelectLowStockItem} />
+            {/* Right Sidebar */}
+            <div className="space-y-4">
+              {/* Low Stock Alerts */}
+              <LowStockAlert items={lowStockItems} onSelectItem={handleSelectLowStockItem} />
+
+              {/* Supplier Selector */}
+              <SupplierSelector
+                suppliers={suppliers}
+                selectedSupplierId={selectedSupplierId}
+                onSelectSupplier={setSelectedSupplierId}
+              />
+            </div>
           </div>
 
           {/* Back Button */}
