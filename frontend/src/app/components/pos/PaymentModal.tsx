@@ -81,7 +81,7 @@ export default function PaymentModal({ isOpen, onClose, totalAmount }: PaymentMo
   // Show SOLD message if sale is complete
   if (showSold) {
     return (
-      <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50">
+      <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50">
         <div className="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-sm">
           <div className="bg-blue-300 text-gray-700 font-bold text-2xl py-6 text-center rounded-lg">
             SOLD !
@@ -92,7 +92,7 @@ export default function PaymentModal({ isOpen, onClose, totalAmount }: PaymentMo
   }
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50">
+    <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50">
       <div className="bg-gradient-to-br from-blue-100 to-white rounded-2xl shadow-2xl p-8 w-full max-w-md backdrop-blur-sm">
         {/* Total Display */}
         <div className="mb-6 flex items-center gap-3">
