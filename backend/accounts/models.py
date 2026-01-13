@@ -14,7 +14,7 @@ class Employee(AbstractUser):
         max_length=10,
         choices=Role.choices,
         default=Role.CASHIER,
-        help_text="The functional role of the employee defining their permissions." [cite: 9]
+        help_text="The functional role of the employee defining their permissions." 
     )
 
     
