@@ -11,7 +11,7 @@ class Product(models.Model):
 
 class SKU(models.Model):
     
-    product = models.ForeignKey(Product, related_name='skus', on_delete=models.CASCADE) [cite: 6]
+    product = models.ForeignKey(Product, related_name='skus', on_delete=models.CASCADE) 
     sku_code = models.CharField(max_length=100, unique=True)
     barcode = models.CharField(max_length=100, unique=True) 
     base_price = models.DecimalField(max_digits=10, decimal_places=2) 
