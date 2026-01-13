@@ -1,10 +1,12 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { ShoppingCart } from 'lucide-react';
+import { useAuthStore } from '../store/authStore';
 
 const loginSchema = z.object({
   username: z.string().min(1, 'Username is required'),
@@ -15,6 +17,9 @@ type LoginFormData = z.infer<typeof loginSchema>;
 
 export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
+  const [loginError, setLoginError] = useState<string | null>(null);
+  const router = useRouter();
+  const login = useAuthStore((state) => state.login);
 
   const {
     register,
@@ -26,17 +31,27 @@ export default function LoginPage() {
 
   const onSubmit = async (data: LoginFormData) => {
     setIsLoading(true);
+    setLoginError(null);
+
     try {
-      // TODO: Add your authentication logic here
-      console.log('Login data:', data);
+      // Simulate API delay
+      await new Promise(resolve => setTimeout(resolve, 500));
 
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      const result = login(data.username, data.password);
 
-      // Handle successful login
-      // router.push('/dashboard');
+      if (result.success && result.role) {
+        // Role-based routing
+        if (result.role === 'manager') {
+          router.push('/inventory');
+        } else if (result.role === 'cashier') {
+          router.push('/pos/register');
+        }
+      } else {
+        setLoginError(result.error || 'Login failed');
+      }
     } catch (error) {
       console.error('Login error:', error);
+      setLoginError('An unexpected error occurred');
     } finally {
       setIsLoading(false);
     }
@@ -113,6 +128,13 @@ export default function LoginPage() {
           {/* Login Card */}
           <div className="rounded-2xl bg-gradient-to-br from-blue-50 to-white p-8 shadow-xl backdrop-blur-sm">
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+              {/* Login Error Message */}
+              {loginError && (
+                <div className="rounded-lg bg-red-50 border border-red-200 p-3 text-center text-sm text-red-600">
+                  {loginError}
+                </div>
+              )}
+
               {/* Username Field */}
               <div>
                 <label
