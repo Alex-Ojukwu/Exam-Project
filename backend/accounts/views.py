@@ -1,5 +1,3 @@
-# backend/accounts/views.py
-
 from rest_framework import status, generics, permissions
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
@@ -14,6 +12,7 @@ from .serializers import (
     CustomTokenObtainPairSerializer,
     ChangePasswordSerializer
 )
+from .permissions import IsManager, IsOwnerOrManager
 
 Employee = get_user_model()
 
@@ -24,10 +23,13 @@ class CustomTokenObtainPairView(TokenObtainPairView):
 
 
 class EmployeeRegistrationView(generics.CreateAPIView):
-    """API endpoint for employee registration."""
+    """
+    API endpoint for employee registration.
+    Only managers can register new employees.
+    """
     queryset = Employee.objects.all()
     serializer_class = EmployeeRegistrationSerializer
-    permission_classes = [permissions.AllowAny]
+    permission_classes = [IsManager]  # Only managers can register
     
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
@@ -46,12 +48,24 @@ class EmployeeRegistrationView(generics.CreateAPIView):
 
 
 class EmployeeProfileView(generics.RetrieveUpdateAPIView):
-    """API endpoint to get and update employee profile."""
+    """
+    API endpoint to get and update employee profile.
+    Users can only update their own profile.
+    """
     serializer_class = EmployeeSerializer
     permission_classes = [permissions.IsAuthenticated]
     
     def get_object(self):
         return self.request.user
+    
+    def update(self, request, *args, **kwargs):
+        # Prevent users from changing their own role
+        if 'role' in request.data and not request.user.is_manager:
+            return Response({
+                'error': 'Only managers can change roles'
+            }, status=status.HTTP_403_FORBIDDEN)
+        
+        return super().update(request, *args, **kwargs)
 
 
 class ChangePasswordView(APIView):
@@ -65,7 +79,6 @@ class ChangePasswordView(APIView):
         )
         
         if serializer.is_valid():
-            # Set new password
             request.user.set_password(serializer.validated_data['new_password'])
             request.user.save()
             
@@ -111,28 +124,66 @@ def test_token(request):
 
 
 class EmployeeListView(generics.ListAPIView):
-    """API endpoint to list all employees (Manager only)."""
+    """
+    API endpoint to list all employees.
+    Managers: Can see all employees
+    Cashiers: Can only see themselves
+    """
     queryset = Employee.objects.all()
     serializer_class = EmployeeSerializer
     permission_classes = [permissions.IsAuthenticated]
     
     def get_queryset(self):
-        # Only managers can view all employees
+        # Managers and superusers can view all employees
         if self.request.user.is_manager or self.request.user.is_superuser:
             return Employee.objects.all().order_by('-date_joined')
+        
         # Cashiers can only see themselves
         return Employee.objects.filter(id=self.request.user.id)
 
 
 class EmployeeDetailView(generics.RetrieveUpdateDestroyAPIView):
-    """API endpoint for employee detail (Manager only for others)."""
+    """
+    API endpoint for employee detail.
+    Managers: Can view/edit/delete any employee
+    Cashiers: Can only view/edit their own profile
+    """
     queryset = Employee.objects.all()
     serializer_class = EmployeeSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated, IsOwnerOrManager]
     
     def get_queryset(self):
         # Managers can access all employees
         if self.request.user.is_manager or self.request.user.is_superuser:
             return Employee.objects.all()
+        
         # Cashiers can only access their own profile
         return Employee.objects.filter(id=self.request.user.id)
+    
+    def update(self, request, *args, **kwargs):
+        employee = self.get_object()
+        
+        # Prevent non-managers from changing roles
+        if 'role' in request.data and not request.user.is_manager:
+            return Response({
+                'error': 'Only managers can change employee roles'
+            }, status=status.HTTP_403_FORBIDDEN)
+        
+        # Prevent employees from changing their own role
+        if 'role' in request.data and employee == request.user:
+            return Response({
+                'error': 'You cannot change your own role'
+            }, status=status.HTTP_403_FORBIDDEN)
+        
+        return super().update(request, *args, **kwargs)
+    
+    def destroy(self, request, *args, **kwargs):
+        employee = self.get_object()
+        
+        # Prevent self-deletion
+        if employee == request.user:
+            return Response({
+                'error': 'You cannot delete your own account'
+            }, status=status.HTTP_403_FORBIDDEN)
+        
+        return super().destroy(request, *args, **kwargs)
