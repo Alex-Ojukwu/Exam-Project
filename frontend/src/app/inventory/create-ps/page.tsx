@@ -139,7 +139,7 @@ export default function CreateProductSupplierPage() {
             {/* Main Content */}
             <div className="flex-1">
               {/* Dropdown Menu */}
-              <div className="relative mb-6">
+              <div className="relative mb-6 max-w-4xl">
                 <div
                   onClick={() => setShowDropdown(!showDropdown)}
                   className="bg-[#34516A] rounded-lg p-4 flex items-center justify-between cursor-pointer hover:bg-[#2d4a5c] transition-colors"
@@ -172,7 +172,7 @@ export default function CreateProductSupplierPage() {
               {/* Product Form */}
               {selectedOption === 'Create New Product' && (
                 <form onSubmit={handleCreateProduct}>
-                  <div className="bg-[#8fa9bc] rounded-lg p-8 max-w-xl">
+                  <div className="bg-[#8fa9bc] rounded-lg p-8 max-w-4xl">
                     <div className="space-y-6">
                       <div>
                         <label className="block text-[#2d4a5c] text-sm font-medium mb-2">
@@ -242,7 +242,7 @@ export default function CreateProductSupplierPage() {
               {/* Supplier Form */}
               {selectedOption === 'Create New Supplier' && (
                 <form onSubmit={handleCreateSupplier}>
-                  <div className="bg-[#8fa9bc] rounded-lg p-8 max-w-xl">
+                  <div className="bg-[#8fa9bc] rounded-lg p-8 max-w-4xl">
                     <div className="space-y-6">
                       <div>
                         <label className="block text-[#2d4a5c] text-sm font-medium mb-2">
@@ -287,18 +287,34 @@ export default function CreateProductSupplierPage() {
                         <label className="block text-[#2d4a5c] text-sm font-medium mb-2">
                           Add Supplier Products
                         </label>
-                        <div className="bg-white rounded-lg p-4 space-y-2">
+                        <div className="bg-white rounded-lg p-4 space-y-3">
                           {supplierProducts.map((product, index) => (
                             <div
                               key={index}
-                              className="flex items-center justify-between py-2 border-b last:border-b-0"
+                              className="flex items-center gap-3 py-2 border-b last:border-b-0"
                             >
-                              <span className="text-sm text-gray-600">
-                                {product.barcode}
-                              </span>
-                              <span className="text-sm font-medium text-[#2d4a5c]">
-                                {product.name}
-                              </span>
+                              <input
+                                type="text"
+                                value={product.barcode}
+                                onChange={(e) => {
+                                  const updated = [...supplierProducts];
+                                  updated[index].barcode = e.target.value;
+                                  setSupplierProducts(updated);
+                                }}
+                                placeholder="Barcode"
+                                className="flex-1 px-3 py-2 rounded border border-gray-300 text-sm text-gray-600 focus:outline-none focus:ring-2 focus:ring-[#34516A]"
+                              />
+                              <input
+                                type="text"
+                                value={product.name}
+                                onChange={(e) => {
+                                  const updated = [...supplierProducts];
+                                  updated[index].name = e.target.value;
+                                  setSupplierProducts(updated);
+                                }}
+                                placeholder="Product Name"
+                                className="flex-1 px-3 py-2 rounded border border-gray-300 text-sm font-medium text-[#2d4a5c] focus:outline-none focus:ring-2 focus:ring-[#34516A]"
+                              />
                             </div>
                           ))}
                         </div>
