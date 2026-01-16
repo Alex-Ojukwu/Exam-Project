@@ -16,28 +16,16 @@ export default function ReceiveStockPage() {
   const [showWarning, setShowWarning] = useState(true);
   const [setPrice, setSetPrice] = useState('24500.00');
 
-  // Mock data - showing PO 134903 data by default
-  const [receiveItems, setReceiveItems] = useState<ReceiveStockItem[]>([
-    {
-      barcode: '83464569',
-      productName: 'PRODUCT 1',
-      qtyPurchased: 25,
-      qtyDelivered: 24,
-      unitPrice: 1000.0,
-    },
-    {
-      barcode: '08458094',
-      productName: 'PRODUCT 2',
-      qtyPurchased: 120,
-      qtyDelivered: 120,
-      unitPrice: 450.0,
-    },
-  ]);
+  const [receiveItems, setReceiveItems] = useState<ReceiveStockItem[]>([]);
 
-  const handleUpdateDelivered = (index: number, qtyDelivered: number) => {
+  const handleUpdateItem = (index: number, updatedItem: ReceiveStockItem) => {
     const newItems = [...receiveItems];
-    newItems[index] = { ...newItems[index], qtyDelivered };
+    newItems[index] = updatedItem;
     setReceiveItems(newItems);
+  };
+
+  const handleAddItem = (item: ReceiveStockItem) => {
+    setReceiveItems([...receiveItems, item]);
   };
 
   const calculateTotalAmount = () => {
@@ -85,7 +73,8 @@ export default function ReceiveStockPage() {
           {/* Receive Stock Table */}
           <ReceiveStockTable
             items={receiveItems}
-            onUpdateDelivered={handleUpdateDelivered}
+            onUpdateItem={handleUpdateItem}
+            onAddItem={handleAddItem}
           />
 
           {/* Warning Message */}

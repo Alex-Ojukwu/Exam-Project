@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Search } from 'lucide-react';
 
 export interface PurchaseOrderItem {
@@ -14,14 +14,50 @@ interface PurchaseOrderTableProps {
   items: PurchaseOrderItem[];
   onUpdateItem?: (index: number, item: PurchaseOrderItem) => void;
   onRemoveItem?: (index: number) => void;
+  onAddItem?: (item: PurchaseOrderItem) => void;
+  minRows?: number;
 }
 
 export default function PurchaseOrderTable({
   items,
   onUpdateItem,
   onRemoveItem,
+  onAddItem,
+  minRows = 6,
 }: PurchaseOrderTableProps) {
   const [searchQuery, setSearchQuery] = useState('');
+
+  // State for empty editable rows
+  const [emptyRows, setEmptyRows] = useState<PurchaseOrderItem[]>([]);
+
+  // Update empty rows when items change
+  useEffect(() => {
+    const currentEmptyCount = Math.max(0, minRows - items.length);
+    setEmptyRows(
+      Array.from({ length: currentEmptyCount }, () => ({
+        barcode: '',
+        productName: '',
+        qtyNeeded: 0,
+        unitPrice: 0,
+      }))
+    );
+  }, [items.length, minRows]);
+
+  const handleEmptyRowChange = (rowIndex: number, field: keyof PurchaseOrderItem, value: string | number) => {
+    const updatedRows = [...emptyRows];
+    updatedRows[rowIndex] = {
+      ...updatedRows[rowIndex],
+      [field]: value,
+    };
+    setEmptyRows(updatedRows);
+
+    // If any field has a value, add this row to items
+    const row = updatedRows[rowIndex];
+    if (row.barcode || row.productName || row.qtyNeeded > 0 || row.unitPrice > 0) {
+      onAddItem?.(row);
+      // useEffect will handle resetting empty rows when items.length changes
+    }
+  };
 
   // Filter items based on search query
   const filteredItems = items.filter((item) => {
@@ -78,7 +114,8 @@ export default function PurchaseOrderTable({
                       onChange={(e) =>
                         onUpdateItem?.(originalIndex, { ...item, barcode: e.target.value })
                       }
-                      className="w-full bg-transparent text-sm text-gray-900"
+                      placeholder="Enter barcode"
+                      className="w-full bg-transparent text-sm text-gray-900 placeholder-gray-400"
                     />
                   </td>
                   <td className="px-4 py-3">
@@ -88,45 +125,80 @@ export default function PurchaseOrderTable({
                       onChange={(e) =>
                         onUpdateItem?.(originalIndex, { ...item, productName: e.target.value })
                       }
-                      className="w-full bg-transparent text-sm text-gray-900"
+                      placeholder="Enter product name"
+                      className="w-full bg-transparent text-sm text-gray-900 placeholder-gray-400"
                     />
                   </td>
                   <td className="px-4 py-3">
                     <input
                       type="number"
-                      value={item.qtyNeeded}
+                      value={item.qtyNeeded || ''}
                       onChange={(e) =>
                         onUpdateItem?.(originalIndex, {
                           ...item,
                           qtyNeeded: parseInt(e.target.value) || 0,
                         })
                       }
-                      className="w-full bg-transparent text-sm text-gray-900"
+                      placeholder="0"
+                      className="w-full bg-transparent text-sm text-gray-900 placeholder-gray-400"
                     />
                   </td>
                   <td className="px-4 py-3">
                     <input
                       type="number"
-                      value={item.unitPrice}
+                      value={item.unitPrice || ''}
                       onChange={(e) =>
                         onUpdateItem?.(originalIndex, {
                           ...item,
                           unitPrice: parseFloat(e.target.value) || 0,
                         })
                       }
-                      className="w-full bg-transparent text-sm text-gray-900"
+                      placeholder="0.00"
+                      className="w-full bg-transparent text-sm text-gray-900 placeholder-gray-400"
                     />
                   </td>
                 </tr>
               );
             })}
-            {/* Empty rows for better UX */}
-            {Array.from({ length: Math.max(0, 5 - displayItems.length) }).map((_, i) => (
-              <tr key={`empty-${i}`} className="border-b border-gray-200">
-                <td className="px-4 py-3 h-12"></td>
-                <td className="px-4 py-3"></td>
-                <td className="px-4 py-3"></td>
-                <td className="px-4 py-3"></td>
+            {/* Editable empty rows */}
+            {!searchQuery && emptyRows.map((emptyRow, i) => (
+              <tr key={`empty-${i}`} className="border-b border-gray-200 hover:bg-gray-50">
+                <td className="px-4 py-3">
+                  <input
+                    type="text"
+                    value={emptyRow.barcode}
+                    onChange={(e) => handleEmptyRowChange(i, 'barcode', e.target.value)}
+                    placeholder="Enter barcode"
+                    className="w-full bg-transparent text-sm text-gray-900 placeholder-gray-400"
+                  />
+                </td>
+                <td className="px-4 py-3">
+                  <input
+                    type="text"
+                    value={emptyRow.productName}
+                    onChange={(e) => handleEmptyRowChange(i, 'productName', e.target.value)}
+                    placeholder="Enter product name"
+                    className="w-full bg-transparent text-sm text-gray-900 placeholder-gray-400"
+                  />
+                </td>
+                <td className="px-4 py-3">
+                  <input
+                    type="number"
+                    value={emptyRow.qtyNeeded || ''}
+                    onChange={(e) => handleEmptyRowChange(i, 'qtyNeeded', parseInt(e.target.value) || 0)}
+                    placeholder="0"
+                    className="w-full bg-transparent text-sm text-gray-900 placeholder-gray-400"
+                  />
+                </td>
+                <td className="px-4 py-3">
+                  <input
+                    type="number"
+                    value={emptyRow.unitPrice || ''}
+                    onChange={(e) => handleEmptyRowChange(i, 'unitPrice', parseFloat(e.target.value) || 0)}
+                    placeholder="0.00"
+                    className="w-full bg-transparent text-sm text-gray-900 placeholder-gray-400"
+                  />
+                </td>
               </tr>
             ))}
           </tbody>

@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { ArrowLeft, Search } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { InventorySidebar, InventoryHeader } from '@/app/components/inventory';
+import { usePurchaseOrderStore } from '@/app/store/purchaseOrderStore';
 
 interface InventoryItem {
   barcode: string;
@@ -12,38 +13,18 @@ interface InventoryItem {
   unitPrice: number;
 }
 
-interface PurchaseOrder {
-  id: string;
-  number: string;
-  selected: boolean;
-}
-
 export default function InventoryListPage() {
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState('');
   const [dateSearch, setDateSearch] = useState('');
+  const [loadedPoId, setLoadedPoId] = useState<string>('');
 
-  // Mock inventory history data
-  const [inventoryItems, setInventoryItems] = useState<InventoryItem[]>([
-    {
-      barcode: '83464569',
-      productName: 'PRODUCT 8',
-      qtyNeeded: 85,
-      unitPrice: 2000.0,
-    },
-    {
-      barcode: '44575676',
-      productName: 'PRODUCT 7',
-      qtyNeeded: 120,
-      unitPrice: 3000.0,
-    },
-  ]);
+  // Purchase orders from store
+  const purchaseOrders = usePurchaseOrderStore((state) => state.purchaseOrders);
+  const togglePurchaseOrder = usePurchaseOrderStore((state) => state.togglePurchaseOrder);
 
-  // Mock purchase orders
-  const [purchaseOrders, setPurchaseOrders] = useState<PurchaseOrder[]>([
-    { id: '1', number: 'Purchase Order 4557', selected: true },
-    { id: '2', number: 'Purchase Order 4822', selected: false },
-  ]);
+  // Inventory items from loaded purchase order
+  const [inventoryItems, setInventoryItems] = useState<InventoryItem[]>([]);
 
   const calculateTotalAmount = () => {
     return inventoryItems.reduce((total, item) => {
@@ -52,11 +33,7 @@ export default function InventoryListPage() {
   };
 
   const handleTogglePO = (id: string) => {
-    setPurchaseOrders(
-      purchaseOrders.map((po) =>
-        po.id === id ? { ...po, selected: !po.selected } : po
-      )
-    );
+    togglePurchaseOrder(id);
   };
 
   const handleLoadOrder = () => {
@@ -66,9 +43,31 @@ export default function InventoryListPage() {
       return;
     }
 
-    // TODO: API call to load selected purchase orders
-    console.log('Loading orders:', selectedPOs);
-    alert(`Loading ${selectedPOs.length} purchase order(s)`);
+    // Load items from selected purchase orders
+    const allItems: InventoryItem[] = [];
+    const poIds: string[] = [];
+
+    selectedPOs.forEach((po) => {
+      poIds.push(po.id);
+      po.items.forEach((item) => {
+        // Check if item already exists (combine quantities if same barcode)
+        const existingIndex = allItems.findIndex((i) => i.barcode === item.barcode);
+        if (existingIndex !== -1) {
+          allItems[existingIndex].qtyNeeded += item.qtyNeeded;
+        } else {
+          allItems.push({
+            barcode: item.barcode,
+            productName: item.productName,
+            qtyNeeded: item.qtyNeeded,
+            unitPrice: item.unitPrice,
+          });
+        }
+      });
+    });
+
+    setInventoryItems(allItems);
+    setLoadedPoId(poIds.join(', '));
+    console.log('Loaded orders:', selectedPOs);
   };
 
   return (
@@ -88,9 +87,14 @@ export default function InventoryListPage() {
               <div className="bg-[#a8c5d8] rounded-lg p-4">
                 {/* Header */}
                 <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-[#2d4a5c] font-semibold text-lg">
-                    Inventory History
-                  </h2>
+                  <div>
+                    <h2 className="text-[#2d4a5c] font-semibold text-lg">
+                      {loadedPoId ? 'Purchase Order Items' : 'Inventory History'}
+                    </h2>
+                    {loadedPoId && (
+                      <p className="text-[#2d4a5c] text-sm font-mono">{loadedPoId}</p>
+                    )}
+                  </div>
                   <div className="relative">
                     <input
                       type="text"
@@ -123,23 +127,31 @@ export default function InventoryListPage() {
                       </tr>
                     </thead>
                     <tbody>
-                      {inventoryItems.map((item, index) => (
-                        <tr
-                          key={index}
-                          className="border-b border-gray-200 hover:bg-gray-50"
-                        >
-                          <td className="px-4 py-3 text-sm text-gray-900">{item.barcode}</td>
-                          <td className="px-4 py-3 text-sm text-gray-900">{item.productName}</td>
-                          <td className="px-4 py-3 text-sm">
-                            <span className="bg-[#6b8fa3] text-white px-3 py-1 rounded">
-                              {item.qtyNeeded}
-                            </span>
+                      {inventoryItems.length === 0 ? (
+                        <tr>
+                          <td colSpan={4} className="px-4 py-8 text-center text-gray-500">
+                            Select a purchase order and click "Load Order" to view items
                           </td>
-                          <td className="px-4 py-3 text-sm text-gray-900">{item.unitPrice.toFixed(2)}</td>
                         </tr>
-                      ))}
+                      ) : (
+                        inventoryItems.map((item, index) => (
+                          <tr
+                            key={index}
+                            className="border-b border-gray-200 hover:bg-gray-50"
+                          >
+                            <td className="px-4 py-3 text-sm text-gray-900">{item.barcode}</td>
+                            <td className="px-4 py-3 text-sm text-gray-900">{item.productName}</td>
+                            <td className="px-4 py-3 text-sm">
+                              <span className="bg-[#6b8fa3] text-white px-3 py-1 rounded">
+                                {item.qtyNeeded}
+                              </span>
+                            </td>
+                            <td className="px-4 py-3 text-sm text-gray-900">{item.unitPrice.toFixed(2)}</td>
+                          </tr>
+                        ))
+                      )}
                       {/* Empty rows */}
-                      {Array.from({ length: Math.max(0, 6 - inventoryItems.length) }).map(
+                      {inventoryItems.length > 0 && Array.from({ length: Math.max(0, 6 - inventoryItems.length) }).map(
                         (_, i) => (
                           <tr key={`empty-${i}`} className="border-b border-gray-200">
                             <td className="px-4 py-3 h-12"></td>
@@ -173,25 +185,31 @@ export default function InventoryListPage() {
                 Purchase Order
               </h3>
 
-              <div className="space-y-3 mb-6">
-                {purchaseOrders.map((po) => (
-                  <div
-                    key={po.id}
-                    className="bg-white rounded-lg p-4 flex items-center justify-between cursor-pointer hover:bg-gray-50"
-                    onClick={() => handleTogglePO(po.id)}
-                  >
-                    <span className="text-sm text-[#2d4a5c] font-medium">
-                      {po.number}
-                    </span>
-                    <input
-                      type="checkbox"
-                      checked={po.selected}
-                      onChange={() => handleTogglePO(po.id)}
-                      className="w-4 h-4"
-                      onClick={(e) => e.stopPropagation()}
-                    />
+              <div className="space-y-3 mb-6 max-h-[300px] overflow-y-auto">
+                {purchaseOrders.length === 0 ? (
+                  <div className="bg-white rounded-lg p-4 text-center text-gray-500 text-sm">
+                    No purchase orders yet
                   </div>
-                ))}
+                ) : (
+                  purchaseOrders.map((po) => (
+                    <div
+                      key={po.id}
+                      className="bg-white rounded-lg p-4 flex items-center justify-between cursor-pointer hover:bg-gray-50"
+                      onClick={() => handleTogglePO(po.id)}
+                    >
+                      <span className="text-sm text-[#2d4a5c] font-medium font-mono">
+                        {po.id}
+                      </span>
+                      <input
+                        type="checkbox"
+                        checked={po.selected}
+                        onChange={() => handleTogglePO(po.id)}
+                        className="w-4 h-4"
+                        onClick={(e) => e.stopPropagation()}
+                      />
+                    </div>
+                  ))
+                )}
               </div>
 
               <button
