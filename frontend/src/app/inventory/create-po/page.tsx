@@ -13,13 +13,28 @@ import {
   type Supplier,
 } from '@/app/components/inventory';
 import { useSupplierStore } from '@/app/store/supplierStore';
+import { usePurchaseOrderStore } from '@/app/store/purchaseOrderStore';
+
+// Generate a unique Purchase Order ID
+const generatePurchaseOrderId = (): string => {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const day = String(now.getDate()).padStart(2, '0');
+  const timestamp = now.getTime().toString(36).toUpperCase();
+  const randomPart = Math.random().toString(36).substring(2, 6).toUpperCase();
+
+  return `PO-${year}${month}${day}-${timestamp.slice(-4)}${randomPart}`;
+};
 
 export default function CreatePurchaseOrderPage() {
   const router = useRouter();
   const suppliers = useSupplierStore((state) => state.suppliers);
+  const addPurchaseOrder = usePurchaseOrderStore((state) => state.addPurchaseOrder);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedSupplierId, setSelectedSupplierId] = useState<string>('');
   const [showSuccessMessage, setShowSuccessMessage] = useState(false);
+  const [lastCreatedPoId, setLastCreatedPoId] = useState<string>('');
   const [poItems, setPoItems] = useState<PurchaseOrderItem[]>([
     { barcode: '', productName: '', qtyNeeded: 0, unitPrice: 0 },
   ]);
@@ -48,6 +63,10 @@ export default function CreatePurchaseOrderPage() {
       ...poItems,
       { barcode: '', productName: '', qtyNeeded: 0, unitPrice: 0 },
     ]);
+  };
+
+  const handleAddItem = (item: PurchaseOrderItem) => {
+    setPoItems([...poItems, item]);
   };
 
   const handleSelectLowStockItem = (item: { barcode: string; productName: string }) => {
@@ -99,6 +118,20 @@ export default function CreatePurchaseOrderPage() {
       return;
     }
 
+    // Generate unique Purchase Order ID
+    const poId = generatePurchaseOrderId();
+    setLastCreatedPoId(poId);
+
+    // Add purchase order to store
+    addPurchaseOrder({
+      id: poId,
+      supplierId: selectedSupplierId,
+      items: validItems,
+      totalAmount: calculateTotalAmount(),
+      createdAt: new Date(),
+    });
+
+    console.log('Purchase Order ID:', poId);
     console.log('Creating PO with items:', validItems);
     console.log('Supplier ID:', selectedSupplierId);
     console.log('Total Amount:', calculateTotalAmount());
@@ -128,7 +161,11 @@ export default function CreatePurchaseOrderPage() {
           <div className="flex gap-6">
             {/* Main content */}
             <div className="flex-1">
-              <PurchaseOrderTable items={poItems} onUpdateItem={handleUpdateItem} />
+              <PurchaseOrderTable
+                items={poItems}
+                onUpdateItem={handleUpdateItem}
+                onAddItem={handleAddItem}
+              />
 
               {/* Total Amount and Create Order Button */}
               <div className="mt-6 bg-[#34516A] rounded-lg p-6 flex items-center justify-between">
@@ -147,7 +184,10 @@ export default function CreatePurchaseOrderPage() {
                   {/* Success Message */}
                   {showSuccessMessage && (
                     <div className="bg-[#86efac] text-gray-700 px-6 py-3 rounded-lg shadow-lg flex items-center gap-3">
-                      <span className="font-medium">Order created and forwarded</span>
+                      <div className="flex flex-col">
+                        <span className="font-medium">Order created and forwarded</span>
+                        <span className="text-sm font-mono">{lastCreatedPoId}</span>
+                      </div>
                       <button
                         onClick={() => setShowSuccessMessage(false)}
                         className="text-gray-700 hover:text-gray-900"

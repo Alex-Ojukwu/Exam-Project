@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Search } from 'lucide-react';
 
 export interface ReceiveStockItem {
@@ -13,14 +13,50 @@ export interface ReceiveStockItem {
 
 interface ReceiveStockTableProps {
   items: ReceiveStockItem[];
-  onUpdateDelivered?: (index: number, qtyDelivered: number) => void;
+  onUpdateItem?: (index: number, item: ReceiveStockItem) => void;
+  onAddItem?: (item: ReceiveStockItem) => void;
+  minRows?: number;
 }
 
 export default function ReceiveStockTable({
   items,
-  onUpdateDelivered,
+  onUpdateItem,
+  onAddItem,
+  minRows = 6,
 }: ReceiveStockTableProps) {
   const [searchQuery, setSearchQuery] = useState('');
+
+  // State for empty editable rows
+  const [emptyRows, setEmptyRows] = useState<ReceiveStockItem[]>([]);
+
+  // Update empty rows when items change
+  useEffect(() => {
+    const currentEmptyCount = Math.max(0, minRows - items.length);
+    setEmptyRows(
+      Array.from({ length: currentEmptyCount }, () => ({
+        barcode: '',
+        productName: '',
+        qtyPurchased: 0,
+        qtyDelivered: 0,
+        unitPrice: 0,
+      }))
+    );
+  }, [items.length, minRows]);
+
+  const handleEmptyRowChange = (rowIndex: number, field: keyof ReceiveStockItem, value: string | number) => {
+    const updatedRows = [...emptyRows];
+    updatedRows[rowIndex] = {
+      ...updatedRows[rowIndex],
+      [field]: value,
+    };
+    setEmptyRows(updatedRows);
+
+    // If any field has a value, add this row to items
+    const row = updatedRows[rowIndex];
+    if (row.barcode || row.productName || row.qtyPurchased > 0 || row.qtyDelivered > 0 || row.unitPrice > 0) {
+      onAddItem?.(row);
+    }
+  };
 
   const calculateDifference = (purchased: number, delivered: number) => {
     return purchased - delivered;
@@ -81,17 +117,48 @@ export default function ReceiveStockTable({
                   key={index}
                   className="border-b border-gray-200 hover:bg-gray-50"
                 >
-                  <td className="px-4 py-3 text-sm text-gray-900">{item.barcode}</td>
-                  <td className="px-4 py-3 text-sm text-gray-900">{item.productName}</td>
-                  <td className="px-4 py-3 text-sm text-center text-gray-900">{item.qtyPurchased}</td>
-                  <td className="px-4 py-3 text-sm text-center">
+                  <td className="px-4 py-3">
+                    <input
+                      type="text"
+                      value={item.barcode}
+                      onChange={(e) =>
+                        onUpdateItem?.(originalIndex, { ...item, barcode: e.target.value })
+                      }
+                      placeholder="Enter barcode"
+                      className="w-full bg-transparent text-sm text-gray-900 placeholder-gray-400"
+                    />
+                  </td>
+                  <td className="px-4 py-3">
+                    <input
+                      type="text"
+                      value={item.productName}
+                      onChange={(e) =>
+                        onUpdateItem?.(originalIndex, { ...item, productName: e.target.value })
+                      }
+                      placeholder="Enter product name"
+                      className="w-full bg-transparent text-sm text-gray-900 placeholder-gray-400"
+                    />
+                  </td>
+                  <td className="px-4 py-3">
                     <input
                       type="number"
-                      value={item.qtyDelivered}
+                      value={item.qtyPurchased || ''}
                       onChange={(e) =>
-                        onUpdateDelivered?.(originalIndex, parseInt(e.target.value) || 0)
+                        onUpdateItem?.(originalIndex, { ...item, qtyPurchased: parseInt(e.target.value) || 0 })
                       }
-                      className="w-16 text-center text-gray-900 bg-transparent border-b border-gray-300 focus:border-blue-500 focus:outline-none"
+                      placeholder="0"
+                      className="w-full text-center bg-transparent text-sm text-gray-900 placeholder-gray-400"
+                    />
+                  </td>
+                  <td className="px-4 py-3">
+                    <input
+                      type="number"
+                      value={item.qtyDelivered || ''}
+                      onChange={(e) =>
+                        onUpdateItem?.(originalIndex, { ...item, qtyDelivered: parseInt(e.target.value) || 0 })
+                      }
+                      placeholder="0"
+                      className="w-full text-center bg-transparent text-sm text-gray-900 placeholder-gray-400"
                     />
                   </td>
                   <td className="px-4 py-3 text-sm text-center">
@@ -105,23 +172,82 @@ export default function ReceiveStockTable({
                       {difference}
                     </span>
                   </td>
-                  <td className="px-4 py-3 text-sm text-gray-900">{item.unitPrice.toFixed(2)}</td>
+                  <td className="px-4 py-3">
+                    <input
+                      type="number"
+                      value={item.unitPrice || ''}
+                      onChange={(e) =>
+                        onUpdateItem?.(originalIndex, { ...item, unitPrice: parseFloat(e.target.value) || 0 })
+                      }
+                      placeholder="0.00"
+                      className="w-full bg-transparent text-sm text-gray-900 placeholder-gray-400"
+                    />
+                  </td>
                   <td className="px-4 py-3 text-sm text-gray-900">{totalPrice}</td>
                 </tr>
               );
             })}
-            {/* Empty rows */}
-            {Array.from({ length: Math.max(0, 5 - displayItems.length) }).map((_, i) => (
-              <tr key={`empty-${i}`} className="border-b border-gray-200">
-                <td className="px-4 py-3 h-12"></td>
-                <td className="px-4 py-3"></td>
-                <td className="px-4 py-3"></td>
-                <td className="px-4 py-3"></td>
-                <td className="px-4 py-3"></td>
-                <td className="px-4 py-3"></td>
-                <td className="px-4 py-3"></td>
-              </tr>
-            ))}
+            {/* Editable empty rows */}
+            {!searchQuery && emptyRows.map((emptyRow, i) => {
+              const difference = calculateDifference(emptyRow.qtyPurchased, emptyRow.qtyDelivered);
+              const totalPrice = calculateTotalPrice(emptyRow.unitPrice, emptyRow.qtyDelivered);
+
+              return (
+                <tr key={`empty-${i}`} className="border-b border-gray-200 hover:bg-gray-50">
+                  <td className="px-4 py-3">
+                    <input
+                      type="text"
+                      value={emptyRow.barcode}
+                      onChange={(e) => handleEmptyRowChange(i, 'barcode', e.target.value)}
+                      placeholder="Enter barcode"
+                      className="w-full bg-transparent text-sm text-gray-900 placeholder-gray-400"
+                    />
+                  </td>
+                  <td className="px-4 py-3">
+                    <input
+                      type="text"
+                      value={emptyRow.productName}
+                      onChange={(e) => handleEmptyRowChange(i, 'productName', e.target.value)}
+                      placeholder="Enter product name"
+                      className="w-full bg-transparent text-sm text-gray-900 placeholder-gray-400"
+                    />
+                  </td>
+                  <td className="px-4 py-3">
+                    <input
+                      type="number"
+                      value={emptyRow.qtyPurchased || ''}
+                      onChange={(e) => handleEmptyRowChange(i, 'qtyPurchased', parseInt(e.target.value) || 0)}
+                      placeholder="0"
+                      className="w-full text-center bg-transparent text-sm text-gray-900 placeholder-gray-400"
+                    />
+                  </td>
+                  <td className="px-4 py-3">
+                    <input
+                      type="number"
+                      value={emptyRow.qtyDelivered || ''}
+                      onChange={(e) => handleEmptyRowChange(i, 'qtyDelivered', parseInt(e.target.value) || 0)}
+                      placeholder="0"
+                      className="w-full text-center bg-transparent text-sm text-gray-900 placeholder-gray-400"
+                    />
+                  </td>
+                  <td className="px-4 py-3 text-sm text-center">
+                    <span className="inline-flex items-center justify-center w-8 h-8 rounded-full text-white font-medium bg-gray-400">
+                      {difference}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3">
+                    <input
+                      type="number"
+                      value={emptyRow.unitPrice || ''}
+                      onChange={(e) => handleEmptyRowChange(i, 'unitPrice', parseFloat(e.target.value) || 0)}
+                      placeholder="0.00"
+                      className="w-full bg-transparent text-sm text-gray-900 placeholder-gray-400"
+                    />
+                  </td>
+                  <td className="px-4 py-3 text-sm text-gray-900">{totalPrice}</td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>

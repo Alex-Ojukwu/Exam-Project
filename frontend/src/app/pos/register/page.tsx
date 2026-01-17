@@ -12,8 +12,8 @@ interface Register {
 export default function RegisterPage() {
   const router = useRouter();
   const [registers] = useState<Register[]>([
-    { id: 1, name: 'Register 1', status: 'in-use' },
-    { id: 2, name: 'Register 2', status: 'in-use' },
+    { id: 1, name: 'Register 1', status: 'available' },
+    { id: 2, name: 'Register 2', status: 'available' },
     { id: 3, name: 'Register 3', status: 'available' },
     { id: 4, name: 'Register 4', status: 'available' },
     { id: 5, name: 'Register 5', status: 'available' },
