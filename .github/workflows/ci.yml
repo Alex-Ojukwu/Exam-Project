@@ -54,9 +54,5 @@ jobs:
           cd frontend
           npm ci
 
-      # Step 4: Build frontend
-      - name: Build project
-        run: |
-          cd frontend
-          npm run build --if-present
+
 
