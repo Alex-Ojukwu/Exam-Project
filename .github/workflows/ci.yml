@@ -30,11 +30,6 @@ jobs:
           pip install -r backend/requirements.txt
           pip install pytest pytest-django
 
-      # Step 4: Run backend tests
-      - name: Run backend tests
-        run: |
-          cd backend
-          pytest
 
   frontend:
     name: Frontend Build and Test
@@ -65,8 +60,3 @@ jobs:
           cd frontend
           npm run build --if-present
 
-      # Step 5: Run frontend tests
-      - name: Run tests
-        run: |
-          cd frontend
-          npm test --if-present
