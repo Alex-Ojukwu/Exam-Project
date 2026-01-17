@@ -2,14 +2,24 @@
 
 import React, { useState } from 'react';
 import { Printer } from 'lucide-react';
+import { useSalesStore, SaleItem } from '../../store/salesStore';
+
+interface CartItem {
+  barcode: string;
+  name: string;
+  quantity: number;
+  price: number;
+}
 
 interface PaymentModalProps {
   isOpen: boolean;
   onClose: () => void;
   totalAmount: number;
+  cartItems: CartItem[];
+  onSaleComplete: () => void;
 }
 
-export default function PaymentModal({ isOpen, onClose, totalAmount }: PaymentModalProps) {
+export default function PaymentModal({ isOpen, onClose, totalAmount, cartItems, onSaleComplete }: PaymentModalProps) {
   const [cashAmount, setCashAmount] = useState('0.00');
   const [cardAmount, setCardAmount] = useState('0.00');
   const [transferAmount, setTransferAmount] = useState('0.00');
@@ -17,6 +27,9 @@ export default function PaymentModal({ isOpen, onClose, totalAmount }: PaymentMo
   const [isApproved, setIsApproved] = useState(false);
   const [isFailed, setIsFailed] = useState(false);
   const [showSold, setShowSold] = useState(false);
+  const [currentOrderId, setCurrentOrderId] = useState<string | null>(null);
+
+  const { addSale, generateOrderId } = useSalesStore();
 
   if (!isOpen) return null;
 
@@ -35,7 +48,9 @@ export default function PaymentModal({ isOpen, onClose, totalAmount }: PaymentMo
     const isSuccess = Math.random() > 0.3;
 
     if (isSuccess) {
-      console.log('Payment confirmed:', { cashAmount, cardAmount, transferAmount, totalPaid, change });
+      const orderId = generateOrderId();
+      setCurrentOrderId(orderId);
+      console.log('Payment confirmed:', { orderId, cashAmount, cardAmount, transferAmount, totalPaid, change });
       setIsProcessing(false);
       setIsApproved(true);
       // Don't close modal - wait for user to click Save or Print
@@ -47,23 +62,50 @@ export default function PaymentModal({ isOpen, onClose, totalAmount }: PaymentMo
     }
   };
 
+  const saveSaleToStore = () => {
+    if (!currentOrderId || cartItems.length === 0) return;
+
+    const saleItems: SaleItem[] = cartItems.map((item) => ({
+      barcode: item.barcode,
+      name: item.name,
+      quantity: item.quantity,
+      price: item.price,
+    }));
+
+    addSale({
+      orderId: currentOrderId,
+      items: saleItems,
+      totalAmount,
+      paymentMethod: {
+        cash: parseFloat(cashAmount || '0'),
+        card: parseFloat(cardAmount || '0'),
+        transfer: parseFloat(transferAmount || '0'),
+      },
+      createdAt: new Date(),
+    });
+
+    console.log('Sale saved with Order ID:', currentOrderId);
+  };
+
   const handlePrint = async () => {
-    // TODO: Handle print receipt logic
+    saveSaleToStore();
     console.log('Printing receipt...');
     // Show SOLD message
     setShowSold(true);
-    // Wait for 1.5 seconds then close
-    await new Promise(resolve => setTimeout(resolve, 1500));
+    // Wait for 3 seconds then close (gives time to note Order ID)
+    await new Promise(resolve => setTimeout(resolve, 3000));
+    onSaleComplete();
     resetAndClose();
   };
 
   const handleSave = async () => {
-    // TODO: Handle save transaction logic
+    saveSaleToStore();
     console.log('Saving transaction...');
     // Show SOLD message
     setShowSold(true);
-    // Wait for 1.5 seconds then close
-    await new Promise(resolve => setTimeout(resolve, 1500));
+    // Wait for 3 seconds then close (gives time to note Order ID)
+    await new Promise(resolve => setTimeout(resolve, 3000));
+    onSaleComplete();
     resetAndClose();
   };
 
@@ -75,6 +117,7 @@ export default function PaymentModal({ isOpen, onClose, totalAmount }: PaymentMo
     setIsApproved(false);
     setIsFailed(false);
     setShowSold(false);
+    setCurrentOrderId(null);
     onClose();
   };
 
@@ -83,8 +126,12 @@ export default function PaymentModal({ isOpen, onClose, totalAmount }: PaymentMo
     return (
       <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50">
         <div className="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-sm">
-          <div className="bg-blue-300 text-gray-700 font-bold text-2xl py-6 text-center rounded-lg">
+          <div className="bg-blue-300 text-gray-700 font-bold text-2xl py-4 text-center rounded-lg">
             SOLD !
+          </div>
+          <div className="mt-4 text-center">
+            <p className="text-gray-500 text-sm">Order ID</p>
+            <p className="text-gray-800 font-bold text-xl">{currentOrderId}</p>
           </div>
         </div>
       </div>

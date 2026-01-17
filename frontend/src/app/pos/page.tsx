@@ -12,13 +12,11 @@ interface CartItem {
   name: string;
   quantity: number;
   price: number;
+  availableQty?: number;
 }
 
 export default function PosPage() {
-  const [cartItems, setCartItems] = useState<CartItem[]>([
-    { barcode: '234934474747', name: 'PRODUCT 1', quantity: 1, price: 2000.00 },
-    { barcode: '834959948420', name: 'PRODUCT 2', quantity: 2, price: 2000.00 },
-  ]);
+  const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
   const [showCancelMessage, setShowCancelMessage] = useState(false);
 
@@ -28,6 +26,16 @@ export default function PosPage() {
       const newQty = newItems[index].quantity + delta;
       if (newQty > 0) {
         newItems[index].quantity = newQty;
+      }
+      return newItems;
+    });
+  };
+
+  const setQuantity = (index: number, qty: number) => {
+    setCartItems(items => {
+      const newItems = [...items];
+      if (qty > 0) {
+        newItems[index].quantity = qty;
       }
       return newItems;
     });
@@ -50,22 +58,49 @@ export default function PosPage() {
     }, 2000);
   };
 
-  return (
-    <main className="h-screen bg-gradient-to-br from-gray-900 to-gray-800 flex flex-col">
-      {/* Header Section with Search */}
-      <ProductSearch />
+  const handleAddToCart = (item: {
+    barcode: string;
+    name: string;
+    quantity: number;
+    price: number;
+    availableQty: number;
+  }) => {
+    setCartItems((prevItems) => {
+      // Check if item already exists in cart
+      const existingIndex = prevItems.findIndex((i) => i.barcode === item.barcode);
 
-      {/* Cart Table - Takes up remaining space */}
-      <div className="flex-1 overflow-auto">
+      if (existingIndex !== -1) {
+        // Item exists, increase quantity (but don't exceed available)
+        const newItems = [...prevItems];
+        const newQty = newItems[existingIndex].quantity + 1;
+        if (newQty <= item.availableQty) {
+          newItems[existingIndex].quantity = newQty;
+        }
+        return newItems;
+      } else {
+        // Add new item to cart
+        return [...prevItems, { ...item }];
+      }
+    });
+  };
+
+  return (
+    <main className="h-screen bg-gradient-to-br from-[#e8f0f5] to-[#d4e3ed] flex flex-col overflow-hidden">
+      {/* Header Section with Search */}
+      <ProductSearch onAddToCart={handleAddToCart} />
+
+      {/* Cart Table - Fixed height with internal scroll */}
+      <div className="flex-1 min-h-0">
         <CartTable
           cartItems={cartItems}
           updateQuantity={updateQuantity}
+          setQuantity={setQuantity}
           showCancelMessage={showCancelMessage}
         />
       </div>
 
       {/* Order Summary and Payment Actions - Fixed at bottom */}
-      <div className="mt-auto">
+      <div className="flex-shrink-0">
         <OrderSummary cartItems={cartItems} />
         <PaymentActions
           onConfirmClick={handleConfirmClick}
@@ -78,6 +113,8 @@ export default function PosPage() {
         isOpen={isPaymentModalOpen}
         onClose={() => setIsPaymentModalOpen(false)}
         totalAmount={totalAmount}
+        cartItems={cartItems}
+        onSaleComplete={() => setCartItems([])}
       />
     </main>
   );

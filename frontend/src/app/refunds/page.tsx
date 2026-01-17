@@ -1,8 +1,9 @@
 'use client';
 
 import { useState } from 'react';
-import { ArrowLeft, Search, ShoppingCart, User, Minus, Plus } from 'lucide-react';
+import { ArrowLeft, Search, ShoppingCart, User, Minus, Plus, Copy, Check } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { useSalesStore } from '../store/salesStore';
 
 interface RefundItem {
   id: string;
@@ -27,31 +28,22 @@ export default function RefundsPage() {
   const [itemSearchQuery, setItemSearchQuery] = useState('');
   const [orderLoaded, setOrderLoaded] = useState(false);
   const [orderFound, setOrderFound] = useState(false);
+  const [currentOrderId, setCurrentOrderId] = useState<string | null>(null);
+  const [paymentMethod, setPaymentMethod] = useState<{ cash: number; card: number; transfer: number } | null>(null);
 
-  // Mock data
   const [refundItems, setRefundItems] = useState<RefundItem[]>([]);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
 
-  const mockSaleOrders: Record<string, RefundItem[]> = {
-    '6249548': [
-      {
-        id: '1',
-        item: 'PRODUCT 1',
-        productPrice: 1200.0,
-        qtyPurchased: 1,
-        qtyToReturn: 1,
-        condition: 'Resellable',
-        selected: true,
-      },
-      {
-        id: '2',
-        item: 'PRODUCT 2',
-        productPrice: 2000.0,
-        qtyPurchased: 2,
-        qtyToReturn: 1,
-        condition: 'Damaged',
-        selected: false,
-      },
-    ],
+  const { getSaleByOrderId, sales } = useSalesStore();
+
+  const handleSelectOrderId = (orderId: string) => {
+    setSaleOrderNumber(orderId);
+  };
+
+  const handleCopyOrderId = async (orderId: string) => {
+    await navigator.clipboard.writeText(orderId);
+    setCopiedId(orderId);
+    setTimeout(() => setCopiedId(null), 1500);
   };
 
   const handleSearchOrder = () => {
@@ -60,14 +52,27 @@ export default function RefundsPage() {
       return;
     }
 
-    const data = mockSaleOrders[saleOrderNumber];
-    if (data) {
-      setRefundItems(data);
+    const sale = getSaleByOrderId(saleOrderNumber.trim());
+    if (sale) {
+      const items: RefundItem[] = sale.items.map((item, index) => ({
+        id: String(index + 1),
+        item: item.name,
+        productPrice: item.price,
+        qtyPurchased: item.quantity,
+        qtyToReturn: 0,
+        condition: 'Resellable' as const,
+        selected: false,
+      }));
+      setRefundItems(items);
+      setCurrentOrderId(sale.orderId);
+      setPaymentMethod(sale.paymentMethod);
       setOrderLoaded(true);
       setOrderFound(true);
     } else {
       alert(`Sale Order ${saleOrderNumber} not found`);
       setRefundItems([]);
+      setCurrentOrderId(null);
+      setPaymentMethod(null);
       setOrderLoaded(true);
       setOrderFound(false);
     }
@@ -205,6 +210,46 @@ export default function RefundsPage() {
                     </span>
                   </div>
                 )}
+
+                {/* Recent Sales Panel */}
+                {sales.length > 0 && (
+                  <div className="mt-4 border-t border-[#8fa9bc] pt-4">
+                    <h4 className="text-[#2d4a5c] font-medium text-sm mb-2">Recent Sales (click to search)</h4>
+                    <div className="flex flex-wrap gap-2">
+                      {sales.map((sale) => (
+                        <div
+                          key={sale.orderId}
+                          className="flex items-center gap-1 bg-white rounded-lg border border-[#4a6575] overflow-hidden"
+                        >
+                          <button
+                            onClick={() => handleSelectOrderId(sale.orderId)}
+                            className="px-3 py-1.5 text-sm font-mono text-[#2d4a5c] hover:bg-[#e8f0f5] transition-colors"
+                            title="Click to search this order"
+                          >
+                            {sale.orderId}
+                          </button>
+                          <button
+                            onClick={() => handleCopyOrderId(sale.orderId)}
+                            className="px-2 py-1.5 border-l border-[#4a6575] hover:bg-[#e8f0f5] transition-colors"
+                            title="Copy to clipboard"
+                          >
+                            {copiedId === sale.orderId ? (
+                              <Check size={14} className="text-green-600" />
+                            ) : (
+                              <Copy size={14} className="text-[#4a6575]" />
+                            )}
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {sales.length === 0 && (
+                  <div className="mt-4 border-t border-[#8fa9bc] pt-4">
+                    <p className="text-[#4a6575] text-sm">No sales recorded yet. Complete a sale in POS first.</p>
+                  </div>
+                )}
               </div>
 
               {/* Items for Return Table */}
@@ -334,13 +379,7 @@ export default function RefundsPage() {
                   </div>
                 </div>
 
-                {/* Summary Button */}
-                <div className="mt-6 flex justify-end">
-                  <button className="bg-[#34516A] hover:bg-[#2d4a5c] text-white px-12 py-3 rounded-lg font-semibold transition-colors">
-                    Summary
-                  </button>
                 </div>
-              </div>
             </div>
 
             {/* Right Column - Refund Summary */}
@@ -371,7 +410,17 @@ export default function RefundsPage() {
                   <div className="mb-6">
                     <div className="flex items-center justify-between text-sm text-[#2d4a5c]">
                       <span>Refund method</span>
-                      <span>card ****1234</span>
+                      <span>
+                        {paymentMethod && (
+                          <>
+                            {paymentMethod.cash > 0 && `Cash: ₦${paymentMethod.cash.toFixed(2)}`}
+                            {paymentMethod.cash > 0 && (paymentMethod.card > 0 || paymentMethod.transfer > 0) && ' | '}
+                            {paymentMethod.card > 0 && `Card: ₦${paymentMethod.card.toFixed(2)}`}
+                            {paymentMethod.card > 0 && paymentMethod.transfer > 0 && ' | '}
+                            {paymentMethod.transfer > 0 && `Transfer: ₦${paymentMethod.transfer.toFixed(2)}`}
+                          </>
+                        )}
+                      </span>
                     </div>
                   </div>
 
