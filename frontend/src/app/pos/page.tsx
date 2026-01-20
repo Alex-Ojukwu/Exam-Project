@@ -1,11 +1,12 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import ProductSearch from '../components/pos/ProductSearch';
 import CartTable from '../components/pos/CartTable';
 import OrderSummary from '../components/pos/OrderSummary';
 import PaymentActions from '../components/pos/PaymentActions';
 import PaymentModal from '../components/pos/PaymentModal';
+import { useInventoryStore } from '../store/inventoryStore';
 
 interface CartItem {
   barcode: string;
@@ -13,12 +14,23 @@ interface CartItem {
   quantity: number;
   price: number;
   availableQty?: number;
+  skuId?: number;
 }
 
 export default function PosPage() {
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
   const [showCancelMessage, setShowCancelMessage] = useState(false);
+
+  const fetchInventory = useInventoryStore((state) => state.fetchInventory);
+  const fetchStores = useInventoryStore((state) => state.fetchStores);
+
+  // Fetch inventory on mount
+  useEffect(() => {
+    fetchStores().then(() => {
+      fetchInventory();
+    });
+  }, [fetchStores, fetchInventory]);
 
   const updateQuantity = (index: number, delta: number) => {
     setCartItems(items => {
