@@ -106,7 +106,8 @@ export default function CreateProductSupplierPage() {
       setSellingPrice('');
     } catch (error) {
       console.error('Error creating product:', error);
-      alert('Failed to create product. Please try again.');
+      const errorMessage = error instanceof Error ? error.message : 'Failed to create product. Please try again.';
+      alert(errorMessage);
     } finally {
       setIsCreating(false);
     }

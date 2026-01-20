@@ -53,10 +53,22 @@ export interface LowStockResponse {
   items: StockLevel[];
 }
 
+// Paginated response type
+interface PaginatedResponse<T> {
+  count: number;
+  next: string | null;
+  previous: string | null;
+  results: T[];
+}
+
 export const inventoryService = {
   // Stores
   async getStores(): Promise<Store[]> {
-    const response = await api.get<Store[]>('/stores/');
+    const response = await api.get<PaginatedResponse<Store> | Store[]>('/stores/');
+    // Handle both paginated and non-paginated responses
+    if ('results' in response.data) {
+      return response.data.results;
+    }
     return response.data;
   },
 
@@ -83,7 +95,11 @@ export const inventoryService = {
   // Registers
   async getRegisters(storeId?: number): Promise<Register[]> {
     const params = storeId ? { store: storeId } : {};
-    const response = await api.get<Register[]>('/registers/', { params });
+    const response = await api.get<PaginatedResponse<Register> | Register[]>('/registers/', { params });
+    // Handle both paginated and non-paginated responses
+    if ('results' in response.data) {
+      return response.data.results;
+    }
     return response.data;
   },
 
@@ -98,7 +114,11 @@ export const inventoryService = {
     if (storeId) params.store = storeId;
     if (skuId) params.sku = skuId;
 
-    const response = await api.get<StockLevel[]>('/stock-levels/', { params });
+    const response = await api.get<PaginatedResponse<StockLevel> | StockLevel[]>('/stock-levels/', { params });
+    // Handle both paginated and non-paginated responses
+    if ('results' in response.data) {
+      return response.data.results;
+    }
     return response.data;
   },
 

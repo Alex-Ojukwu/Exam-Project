@@ -82,16 +82,18 @@ export const useProductStore = create<ProductStore>((set, get) => ({
 
   createProductWithSKU: async (data) => {
     set({ isLoading: true, error: null });
+    let createdProduct: { id: number } | null = null;
+
     try {
       // First create the product
-      const product = await productService.createProduct({
+      createdProduct = await productService.createProduct({
         name: data.name,
         description: data.description,
       });
 
       // Then create the SKU
       const sku = await productService.createSKU({
-        product: product.id,
+        product: createdProduct.id,
         sku_code: data.skuCode,
         barcode: data.barcode,
         base_price: data.basePrice,
@@ -104,10 +106,39 @@ export const useProductStore = create<ProductStore>((set, get) => ({
       }));
 
       return newProduct;
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Error creating product:', error);
-      set({ error: 'Failed to create product', isLoading: false });
-      throw error;
+
+      // If product was created but SKU failed, try to clean up
+      if (createdProduct) {
+        try {
+          await productService.deleteProduct(createdProduct.id);
+        } catch (deleteError) {
+          console.error('Failed to clean up orphaned product:', deleteError);
+        }
+      }
+
+      // Extract error message from response
+      let errorMessage = 'Failed to create product';
+      if (error && typeof error === 'object' && 'response' in error) {
+        const axiosError = error as { response?: { data?: Record<string, string[]> } };
+        const responseData = axiosError.response?.data;
+        if (responseData) {
+          // Handle Django REST Framework validation errors
+          const messages: string[] = [];
+          for (const [field, errors] of Object.entries(responseData)) {
+            if (Array.isArray(errors)) {
+              messages.push(`${field}: ${errors.join(', ')}`);
+            }
+          }
+          if (messages.length > 0) {
+            errorMessage = messages.join('; ');
+          }
+        }
+      }
+
+      set({ error: errorMessage, isLoading: false });
+      throw new Error(errorMessage);
     }
   },
 

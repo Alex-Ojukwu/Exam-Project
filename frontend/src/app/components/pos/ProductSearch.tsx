@@ -13,6 +13,7 @@ interface ProductSearchProps {
     quantity: number;
     price: number;
     availableQty: number;
+    skuId: number;
   }) => void;
 }
 
@@ -65,6 +66,7 @@ export default function ProductSearch({ onAddToCart }: ProductSearchProps) {
         quantity: 1,
         price: item.sellingPrice,
         availableQty: item.quantity,
+        skuId: item.skuId,
       });
     }
     setSearchValue('');

@@ -24,13 +24,15 @@ export default function PosPage() {
 
   const fetchInventory = useInventoryStore((state) => state.fetchInventory);
   const fetchStores = useInventoryStore((state) => state.fetchStores);
+  const fetchRegisters = useInventoryStore((state) => state.fetchRegisters);
 
   // Fetch inventory on mount
   useEffect(() => {
     fetchStores().then(() => {
       fetchInventory();
+      fetchRegisters();
     });
-  }, [fetchStores, fetchInventory]);
+  }, [fetchStores, fetchInventory, fetchRegisters]);
 
   const updateQuantity = (index: number, delta: number) => {
     setCartItems(items => {
@@ -76,6 +78,7 @@ export default function PosPage() {
     quantity: number;
     price: number;
     availableQty: number;
+    skuId: number;
   }) => {
     setCartItems((prevItems) => {
       // Check if item already exists in cart
@@ -90,8 +93,15 @@ export default function PosPage() {
         }
         return newItems;
       } else {
-        // Add new item to cart
-        return [...prevItems, { ...item }];
+        // Add new item to cart with skuId
+        return [...prevItems, {
+          barcode: item.barcode,
+          name: item.name,
+          quantity: item.quantity,
+          price: item.price,
+          availableQty: item.availableQty,
+          skuId: item.skuId,
+        }];
       }
     });
   };

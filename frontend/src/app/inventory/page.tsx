@@ -191,7 +191,7 @@ export default function InventoryListPage() {
                           Product name
                         </th>
                         <th className="px-4 py-3 text-left text-sm font-semibold">
-                          Qty needed
+                          {selectedMode === 'purchase_order' ? 'Qty needed' : 'Qty available'}
                         </th>
                         <th className="px-4 py-3 text-left text-sm font-semibold">
                           Unit price
